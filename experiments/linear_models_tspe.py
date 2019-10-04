@@ -56,6 +56,11 @@ x_data = df.drop(dependent_column, axis=1)
 y_data = df[dependent_column]
 
 # choose model type
+# TODO: model factory with returned param_grid with scaled features, polynomial features, pca
+# TODO: add clustering model
+# TODO: deploy on production
+# TODO: add SQL handlers aja ORM
+# TODO: ADD preparing data, in this file just load it
 # model = LinearRegression()
 # model = Ridge()
 # pca = PCA()

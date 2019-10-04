@@ -1,10 +1,13 @@
 from sklearn import externals
 import joblib
-model_filename = 'hatespeech.joblib.z'
-clf = joblib.load(model_filename)
+from settings import PROJECT_ROOT
+import os
+models_path = os.path.join(PROJECT_ROOT, 'models')
+model_filename = 'best_model_10_03_2019_11_54_02.joblib'
+model_path = os.path.join(models_path, model_filename)
+clf = joblib.load(model_path)
 
 def predict(input):
-    probas = clf.predict_proba([input])[0]
-    return {'hate speech': probas[0],
-           'offensive language': probas[1],
-           'neither': probas[2]}
+    prediction_value = clf.predict([input])[0]
+    return {'prediction': probas}
+
