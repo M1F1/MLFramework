@@ -130,3 +130,6 @@ credentials.py
 
 # logs and serialized models
 models/
+
+# vizualizations
+visualizations/
