@@ -25,6 +25,7 @@ import pdb
 import xgboost as xgb
 from experiments.LinearModelFactory import LinearModelFactory
 from joblib import dump, load
+import time
 
 # set_logger
 model_filename = 'best_model_{}.joblib'.format(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
@@ -41,6 +42,7 @@ logger = logging.getLogger()
 # get local data
 
 filename = 'male_data_0.csv'
+logger.info("filename: {}".format(filename))
 data_path = os.path.join(PROJECT_ROOT, 'data')
 if not os.path.exists(data_path):
     os.makedirs(data_path)
@@ -67,21 +69,18 @@ print(x_data.dtypes)
 # TODO: add SQL handlers aka ORM
 # TODO: ADD preparing data, in this file just load it
 
-seed = 42
+seed = 56
 folds_num = 4
-hyperparameters_num = 2
+hyperparameters_num = 1
 np.random.seed(seed=seed)
 # choose model type, look at LinearModelFactory to choose one
-model_name = 'xgboost_classifier'
+model_name ='xgboost_classifier' #'sgd_classifier'
 
 model, param_grid = LinearModelFactory(seed=seed, h_param_n=hyperparameters_num)\
                     .get_model_and_param_grid(model_name)
 logger.info("Model type: {}".format(model.__class__.__name__))
 # define pipeline
-# categorical_transformer = Pipeline(steps=[
-#     ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-#     ('onehot', OneHotEncoder(handle_unknown='ignore'))])
-#
+
 categorical_features = x_data.select_dtypes(include=object).columns.values
 preprocessor = ColumnTransformer(transformers=[
                                 # ('one_hot', OneHotEncoder(), categorical_features),
@@ -91,16 +90,16 @@ preprocessor = ColumnTransformer(transformers=[
 pipe = Pipeline([
                  # ('scale', StandardScaler()),
                  ('preprocessor', preprocessor),
-                 # ('encoder', OneHotEncoder(cols=categorical_features)),
-                 # ('encoder', OrdinalEncoder(cols=categorical_features)),
-                 # ('pca', PCA()),
+                 # ('pca', PCA(n_components=200)),
                  # ('polynomial', PolynomialFeatures(include_bias=False)),
                  ('model', model)
                  ])
+logger.info("Pipe preprocessor: {}".format(pipe.named_steps['preprocessor']))
 # param_grid['polynomial__degree'] = [1, 2, 3]
 # param_grid['pca__n_components'] = [2, 5, 6, 10, 12, 15]
 
 logger.info("Execute grid search:")
+time_start = time.time()
 logger.info("random seed: {}".format(seed))
 logger.info("param grid: {}".format(param_grid))
 search = GridSearchCV(pipe, param_grid, cv=folds_num)
@@ -108,6 +107,7 @@ search.fit(x_data, y_data)
 logger.info('best_score: {}'.format(search.best_score_))
 logger.info('best_params: {}'.format(search.best_params_))
 best_model = search.best_estimator_
+logger.info('grid search duration: {} s'.format(time.time() - time_start))
 
 logger.info('Holdout:')
 x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.20, random_state=seed)
@@ -119,9 +119,9 @@ logger.info('score: {}'.format(best_model.score(x_train, y_train)))
 logger.info('out-sample evaluation')
 logger.info('score: {}'.format(best_model.score(x_test, y_test)))
 
-logger.info('Cross-validation:')
-scores = cross_val_score(best_model, x_data, y_data, cv=folds_num)
-logger.info("The mean of the folds are {} and the standard deviation is {}".format(scores.mean(), scores.std()))
+# logger.info('Cross-validation:')
+# scores = cross_val_score(best_model, x_data, y_data, cv=folds_num)
+# logger.info("The mean of the folds are {} and the standard deviation is {}".format(scores.mean(), scores.std()))
 
 logger.info('Serializing best model...')
 models_path = os.path.join(PROJECT_ROOT, 'models')
@@ -140,7 +140,7 @@ if model.__class__.__name__ in ('XGBClassifier'):
     cols_names = x_data.columns.values.tolist()
     xgb_model = best_model.named_steps["model"]
     xgb_model.get_booster().feature_names = cols_names
-    xgb.plot_importance(xgb_model)
+    xgb.plot_importance(xgb_model, max_num_features=10)
 
     vis_path = os.path.join(PROJECT_ROOT, 'visualizations')
     if not os.path.exists(vis_path):
@@ -151,7 +151,7 @@ if model.__class__.__name__ in ('XGBClassifier'):
     filename_path = os.path.join(vis_path,
                                  'feature_importance_{}.png'.format(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")))
     fig.savefig(filename_path)
-    plt.show()
+    # plt.show()
 
     # need to install: sudo apt-get install graphviz
     xgb.plot_tree(xgb_model, num_trees=xgb_model.get_booster().best_iteration)
@@ -159,7 +159,7 @@ if model.__class__.__name__ in ('XGBClassifier'):
     fig.set_size_inches(75, 50)
     filename_path = os.path.join(vis_path, 'tree_{}.png'.format(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")))
     fig.savefig(filename_path)
-    plt.show()
+    # plt.show()
 
 
 
