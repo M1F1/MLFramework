@@ -43,6 +43,7 @@ class LinearModelFactory:
                       "model__max_depth": randint(2, 6).rvs(size=self.h_param_n),  # default 3
                       "model__learning_rate": uniform(0.03, 0.3).rvs(size=self.h_param_n),  # default 0.1
                       "model__gamma": uniform(0, 0.5).rvs(size=self.h_param_n),
+                      "model__n_estimators": randint(5, 7).rvs(size=self.h_param_n),  # default 100
                       "model__subsample": uniform(0.6, 0.4).rvs(size=self.h_param_n)
                      }
         return model, param_grid

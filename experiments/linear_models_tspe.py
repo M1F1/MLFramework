@@ -8,6 +8,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from category_encoders import OrdinalEncoder
+from category_encoders import OneHotEncoder
 
 import matplotlib.pyplot as plt
 
@@ -36,24 +40,27 @@ logger = logging.getLogger()
 
 # get local data
 
-# filename = 'file_test.csv'
-# data_path = os.path.join(PROJECT_ROOT, 'data')
-# if not os.path.exists(data_path):
-#     os.makedirs(data_path)
-# data_filename_path = os.path.join(data_path, filename)
-# df = pd.read_csv(data_filename_path, index_col=0)
-
-# get remote data
-path = 'https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/DA0101EN/automobileEDA.csv'
-df = pd.read_csv(path)
-df = df.dropna()
+filename = 'male_data_0.csv'
+data_path = os.path.join(PROJECT_ROOT, 'data')
+if not os.path.exists(data_path):
+    os.makedirs(data_path)
+data_filename_path = os.path.join(data_path, filename)
+df = pd.read_csv(data_filename_path, index_col=0)
 print(df.head())
+# get remote data
+# path = 'https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/DA0101EN/automobileEDA.csv'
+# df = pd.read_csv(path)
+# df = df.dropna()
+# print(df.head())
 
 # choose independent features and indicator
 # be careful about information leak
-dependent_column = 'body-style'
+dependent_column = 'is_obesity'
 y_data = df[dependent_column]
-x_data = df.drop(dependent_column, axis=1).select_dtypes(include=np.number)
+print(y_data.head())
+x_data = df.drop(columns=[dependent_column, 'log_BMI', 'IID'], axis=1)#.select_dtypes(include=np.number)
+print(x_data.head())
+print(x_data.dtypes)
 
 # TODO: add clustering model
 # TODO: deploy on production
@@ -71,7 +78,21 @@ model, param_grid = LinearModelFactory(seed=seed, h_param_n=hyperparameters_num)
                     .get_model_and_param_grid(model_name)
 logger.info("Model type: {}".format(model.__class__.__name__))
 # define pipeline
-pipe = Pipeline([('scale', StandardScaler()),
+# categorical_transformer = Pipeline(steps=[
+#     ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+#     ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+#
+categorical_features = x_data.select_dtypes(include=object).columns.values
+preprocessor = ColumnTransformer(transformers=[
+                                # ('one_hot', OneHotEncoder(), categorical_features),
+                                ('encoder', OrdinalEncoder(), categorical_features),
+                                ])
+# print('categorical_features:', categorical_features)
+pipe = Pipeline([
+                 # ('scale', StandardScaler()),
+                 ('preprocessor', preprocessor),
+                 # ('encoder', OneHotEncoder(cols=categorical_features)),
+                 # ('encoder', OrdinalEncoder(cols=categorical_features)),
                  # ('pca', PCA()),
                  # ('polynomial', PolynomialFeatures(include_bias=False)),
                  ('model', model)
