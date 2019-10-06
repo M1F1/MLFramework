@@ -41,7 +41,7 @@ logger = logging.getLogger()
 
 # get local data
 
-filename = 'male_data_0.csv'
+filename = 'female_data_0.csv'
 logger.info("filename: {}".format(filename))
 data_path = os.path.join(PROJECT_ROOT, 'data')
 if not os.path.exists(data_path):
@@ -74,7 +74,7 @@ folds_num = 4
 hyperparameters_num = 1
 np.random.seed(seed=seed)
 # choose model type, look at LinearModelFactory to choose one
-model_name ='xgboost_classifier' #'sgd_classifier'
+model_name = 'xgboost_classifier' #'sgd_classifier'
 
 model, param_grid = LinearModelFactory(seed=seed, h_param_n=hyperparameters_num)\
                     .get_model_and_param_grid(model_name)
